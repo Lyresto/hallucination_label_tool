@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en" style="height: 100%">
+<head>
+    <meta charset="UTF-8">
+    <title></title>
+    <script src="lib/jquery2.1.1.min.js"></script>
+    <script src="lib/layui/layui.js"></script>
+    <script src="lib/highlight.js"></script>
+    <script src="lib/highlightjs-line-numbers.js"></script>
+    <link rel="stylesheet" type="text/css" href="lib/layui/css/layui.css">
+    <link rel="stylesheet" href="lib/idea.css">
+    <link rel="stylesheet" href="lib/dark.css">
+    <script src="label-tool.js"></script>
+    <style>body{
+        font-family: "思源黑体 CN Medium",serif; color: #dedede;
+    }</style>
+    <style>button{
+        border-radius: 10px;
+    }</style>
+    <style>
+        .hljs-ln-numbers {
+            text-align: center;
+            color: #ccc;
+            border-right: 1px solid #999;
+            vertical-align: top;
+            padding-right: 5px;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            -khtml-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+    </style>
+</head>
+<body style="background: #2f2f2f; margin-left: 20px; margin-right: 20px; margin-bottom: 50px" onload="initPage()">
+<div class="layui-row" style="margin-top: 20px">
+    <div class="layui-col-md2" id="task-id" style="font-size: medium; padding-top: 8px; text-align: center">
+    </div>
+    <div class="layui-col-md1" id="eval-result" style="font-size: x-large; color: limegreen; text-align: center">
+    </div>
+    <div class="layui-col-md2">
+        <button type="button" id="prev-button" class="layui-upload-button layui-btn-sm layui-bg-gray" title="shift + ←">
+            前一条
+        </button>
+        <button type="button" id="next-button" class="layui-upload-button layui-btn-sm layui-bg-gray" style="margin-left: 15px" title="shift + →">
+            后一条
+        </button>
+        <button type="button" id= "save-button" class="layui-upload-button layui-btn-sm layui-bg-green" style="margin-left: 15px" title="shift + ↓">
+            保存
+        </button>
+    </div>
+    <div class="layui-col-md3" style="padding-right: 65px">
+        <form class="layui-form">
+            <div class="layui-form-item">
+                <label class="layui-form-label" style="font-size: large">数据集</label>
+                <div class="layui-input-block">
+                    <label>
+                        <select name="dataset" id="dataset" lay-filter="dataset">
+                            <option value=""></option>
+                            <option value="HumanEval">HumanEval</option>
+                            <option value="CEJava">CoderEval(Java)</option>
+                            <option value="CEPython">CoderEval(Python)</option>
+                        </select>
+                    </label>
+                </div>
+            </div>
+        </form>
+    </div>
+    <div class="layui-col-md2" style="width: 320px">
+        <form class="layui-form" id="search-form" autocomplete="off">
+            <div class="layui-form-item">
+                <label class="layui-form-label" style="font-size: large; width: 110px">Target index</label>
+                <div class="layui-input-inline" style="width: 80px">
+                    <label>
+                        <input name="index" type="text" class="layui-input">
+                    </label>
+                </div>
+                <button class="layui-btn-sm" id="jump-button" type="button">跳转</button>
+            </div>
+        </form>
+    </div>
+    <div id="index" class="layui-col-md1" style="font-size: x-large; text-align: right; width: 120px">
+    </div>
+</div>
+
+<div class="layui-row">
+    <div class="layui-col-md11">
+        <div class="layui-progress layui-progress-big" lay-filter="progress-bar">
+            <div class="layui-progress-bar" lay-percent="0%">
+                <span class="layui-progress-text">0%</span>
+            </div>
+        </div>
+    </div>
+    <div class="layui-col-md1" id="progress-detail" style="font-size: medium; text-align: center; position: relative; bottom: 4px"></div>
+</div>
+
+
+<blockquote class="layui-elem-quote" id="exist-labeler" style="display: none; color: black; margin-top: 10px"></blockquote>
+
+<hr style="margin: 10px 15px;">
+
+<p style="font-size: x-large; margin-top: 20px">
+    <i class="layui-icon" id="prompt-label-icon" style="font-size: x-large"></i>
+    Prompt标注
+</p>
+<div class="layui-row" style="margin-top: 20px">
+    <form class="layui-form" id="prompt-form" autocomplete="off" lay-filter="prompt-form">
+        <div class="layui-form-item">
+            <div class="layui-col-md4">
+                <label class="layui-form-label" style="font-size: large; width: 100px">逻辑复杂度</label>
+                <div class="layui-input-inline" style="width: 100px">
+                    <div class="layui-row">
+                        <label>
+                            <input name="logic-complexity" id="logic-complexity" class="layui-input">
+                        </label>
+                    </div>
+                    <div id="complexity-warning" class="layui-row" style="font-size:x-small; color: red; display: none">
+                        * 数据不符合范围！
+                    </div>
+                </div>
+                <div class="layui-form-mid layui-word-aux" style="font-size: large">1-5（越高越复杂）</div>
+            </div>
+            <div class="layui-col-md4">
+                <label class="layui-form-label" style="font-size: large; width: 190px">是否存在模糊/歧义逻辑</label>
+                <div id="fuzzy" class="layui-input-inline">
+                    <input type="checkbox" name="fuzzy" lay-skin="switch" lay-text="是|否" value="true" title="">
+                </div>
+            </div>
+            <div class="layui-col-md4" style="width: 420px">
+                <label class="layui-form-label" style="font-size: large; width: 180px">描述是否不完整</label>
+                <div id="incomplete" class="layui-input-inline">
+                    <input type="checkbox" name="incomplete" lay-skin="switch" lay-text="是|否" value="true" title="">
+                </div>
+            </div>
+        </div>
+        <div class="layui-form-item layui-form-text" id="fuzzy-content" style="margin-right: 20px">
+            <label class="layui-form-label" style="font-size: large; width: 100px">请填写具体的模糊/歧义内容</label>
+            <div class="layui-input-block" style="margin-left: 130px">
+                <textarea id="fuzzy-content-input" name="fuzzy-content" placeholder="请输入" class="layui-textarea" title=""></textarea>
+            </div>
+        </div>
+    </form>
+</div>
+
+<hr style="margin: 20px 15px;">
+
+<p style="font-size: x-large; margin-top: 20px">
+    <i class="layui-icon" id="code-label-icon" style="font-size: x-large"></i>
+    代码幻觉标注（鼠标悬停可查看类别描述）
+</p>
+<div class="layui-row" style="margin-bottom: 20px; margin-top: 20px; font-size: large; text-align: center">
+    <div class="layui-col-md1">序号</div>
+    <div class="layui-col-md1" style="padding-right: 30px">开始行</div>
+    <div class="layui-col-md1" style="padding-right: 30px">结束行</div>
+    <div class="layui-col-md3">产生因素（可多选）</div>
+    <div class="layui-col-md4" style="width: 480px;">幻觉模式</div>
+    <div class="layui-col-md2" style="width: 170px">幻觉影响（可多选）</div>
+</div>
+
+<div class="layui-row" id="code-form-all" style="margin-top: 15px; font-size: large">
+
+</div>
+
+<div class="layui-row" style="margin-top: 20px">
+    <div class="layui-col-md1" style="font-size: large; justify-content: center">
+        <button type="button" id="add-button" title="点击以添加" class="layui-upload-button layui-btn-sm layui-bg-gray" style="margin-left: 35px; border-radius: 40px; font-weight: bold; font-size: large;">
+            <i class="layui-icon">&#xe654;</i>
+        </button>
+    </div>
+</div>
+<hr style="margin: 20px 15px;">
+
+<div class="layui-row" style="margin-top: 20px">
+    <div class="layui-col-md6" style="padding-right: 8px">
+        <div class="layui-row" style="font-size: large">prompt</div>
+        <div class="layui-row" id="prompt" style="margin-top: 20px">
+        </div>
+        <div class="layui-row" style="font-size: large; margin-top: 20px">参考代码</div>
+        <div class="layui-row" id="reference" style="margin-top: 20px">
+        </div>
+        <div class="layui-row" style="font-size: large; margin-top: 20px">错误信息（仅供参考）</div>
+        <div class="layui-row" id="result" style="margin-top: 20px">
+        </div>
+    </div>
+    <div class="layui-col-md6" style="padding-left: 8px">
+        <div class="layui-row" style="font-size: large">模型响应</div>
+        <div class="layui-row" id="generation" style="margin-top: 20px">
+        </div>
+        <div class="layui-row" style="font-size: large; margin-top: 20px">提取代码</div>
+        <div class="layui-row" id="code" style="margin-top: 20px">
+        </div>
+    </div>
+</div>
+</body>
+</html>
