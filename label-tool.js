@@ -331,6 +331,14 @@ function load(data) {
     }
     $('#index')['0'].innerText = data['index']
 
+    let projectBar = $('#project');
+    if (dataset === 'HumanEval') {
+        projectBar.css('display', 'none');
+    } else {
+        projectBar.css('display', '');
+        projectBar.text(`项目名：${data['project']}`);
+    }
+
     $('#prompt')['0'].innerHTML = wrapCode(data['prompt']);
     $('#reference')['0'].innerHTML = wrapCode(data['reference_solution']);
     $('#result')['0'].innerHTML = wrapCode(evalInfo);
@@ -564,7 +572,8 @@ function bindListeners(type, index=1) {
             $('#prev-button')['0'].addEventListener('click', function () {loadPage('prev')});
             $('#next-button')['0'].addEventListener('click', function () {loadPage('next')});
             $('#save-button')['0'].addEventListener('click', function () {save()});
-            $('#jump-button')['0'].addEventListener('click', function () {loadPage('jump', formDataToJson($('#search-form'))['index']);})
+            $('#jump-button')['0'].addEventListener('click', function () {loadPage('jump', formDataToJson($('#search-form'))['index']);});
+            $('#clear-button')['0'].addEventListener('click', function (){$('#code-form-all')['0'].innerHTML = '';});
             $('#logic-complexity')['0'].addEventListener('input', complexityWarningHandler);
             $('#fuzzy')['0'].addEventListener('click', fuzzyContentDisplayHandler);
             $('#add-button')['0'].addEventListener('click', addButtonHandler);
