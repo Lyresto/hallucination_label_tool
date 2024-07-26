@@ -319,7 +319,7 @@ function load(data) {
         if (dataset === 'CEJava') {
             evalInfo = data['evaluation_result']['error_detail_message'];
         } else {
-            evalInfo = ''
+            evalInfo = data['evaluation_result']['error']
         }
     }
     if (passed) {
